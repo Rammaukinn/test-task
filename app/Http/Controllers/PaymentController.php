@@ -27,7 +27,9 @@ class PaymentController extends Controller
 
         $payment_gateway->writeToBase();
 
-        return response()->json([[]]);
+        return response()->json([
+            "success" => true
+        ]);
     }
 
     public function secondPaymentGateway(Request $request)
