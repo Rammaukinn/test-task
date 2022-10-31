@@ -18,19 +18,16 @@ return new class extends Migration
             $table->id();
             $table->integer('merchant_id')->nullable(false);
             $table->string('merchant_key')->nullable(false);
-            $table->integer('payment_gateway')->nullable(false);
         });
 
         DB::table('merchants')->insert([
             [
                 'merchant_id' => 6,
-                'merchant_key' => 'KaTf5tZYHx4v7pgZ',
-                'payment_gateway' => 1
+                'merchant_key' => 'KaTf5tZYHx4v7pgZ'
             ],
             [
                 'merchant_id' => 816,
-                'merchant_key' => 'rTaasVHeteGbhwBx',
-                'payment_gateway' => 2
+                'merchant_key' => 'rTaasVHeteGbhwBx'
             ]
         ]);
     }
