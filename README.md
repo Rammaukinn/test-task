@@ -1,66 +1,93 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
-
-<p align="center">
-<a href="https://travis-ci.org/laravel/framework"><img src="https://travis-ci.org/laravel/framework.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
+<!-- title: Тестовое задание -->
+<p>
+    <h1 align="center">Тестовое задание Laravel</h1>
+    <br>
 </p>
 
-## About Laravel
+> После пуша Laravel в ваш репозиторий, сделайте задание в любой другой ветке и PR в основную.
+Задача: подключить 2 платёжных шлюза (приём платежей).
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+1. В базе должны присутствовать таблицы пользователей и платежей
+2. Оба шлюза присылают данные на `callback url` при изменении состояния платежа.
+3. Оба шлюза работают только с одной валютой и передают суммы в центах.
+4. Создание платежа на стороне шлюза не требуется (нужно сделать только обработку изменения состояний).
+5. Для каждого платёжного шлюза нужно реализовать возможность установки лимита, после прохождения которого проведение платежей останавливается до следующего дня.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Шлюз №1
+### Данные для мерчанта:
+```
+merchant_id=6
+merchant_key=KaTf5tZYHx4v7pgZ
+```
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### Поля, которые отправляются на `callback_url` в формате `application/json`:
+| Field       | Type    | Description                                                           |
+|-------------|---------|-----------------------------------------------------------------------|
+| merchant_id | Integer | ID of merchant                                                        |
+| payment_id  | Integer | Merchant's payment ID                                                 |
+| status      | String  | Payment status. Could be new, pending, completed, expired or rejected |
+| amount      | Integer | Payment amount                                                        |
+| amount_paid | Integer | Actually paid amount (in merchant's currency)                         |
+| timestamp   | Integer | Current timestamp                                                     |
+| sign        | String  | Signature                                                             |
 
-## Learning Laravel
+### Правила формирования подписи:
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+1. Отсортировать параметры по алфавиту.
+2. Объединить их (`за исключением sign`), используя разделитель `:`.
+3. К концу получившейся строки добавить `merchant_key`.
+4. Получить из неё SHA256 хеш.
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+### Пример запроса:
+```
+{
+    "merchant_id": 6,
+    "payment_id": 13,
+    "status": "completed",
+    "amount": 500,
+    "amount_paid": 500,
+    "timestamp": 1654103837,
+    "sign": "f027612e0e6cb321ca161de060237eeb97e46000da39d3add08d09074f931728"
+}
+```
+<br><br><br>
+## Шлюз №2
+### Данные для мерчанта:
+```
+app_id=816
+app_key=rTaasVHeteGbhwBx
+```
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 2000 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Поля, которые отправляются на `callback_url` в формате `multipart/form-data`:
+| Field       | Type    | Description                                                           |
+|-------------|---------|-----------------------------------------------------------------------|
+| project | Integer | ID of merchant                                                        |
+| invoice  | Integer | Merchant's payment ID                                                 |
+| status      | String  | Payment status. Could be created, inprogress, paid, expired or rejected |
+| amount      | Integer | Payment amount                                                        |
+| amount_paid | Integer | Actually paid amount (in merchant's currency)                         |
+| rand   | String | Random string                                                     |
 
-## Laravel Sponsors
+В запросе передается заголовок `Authorization`, в котором находится подпись.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+### Правила формирования подписи:
 
-### Premium Partners
+1. Отсортировать параметры по алфавиту.
+2. Объединить поля, используя разделитель `.`.
+3. К концу получившейся строки добавить `app_key`.
+4. Получить из неё MD5 хеш.
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[Many](https://www.many.co.uk)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[OP.GG](https://op.gg)**
-- **[WebReinvent](https://webreinvent.com/?utm_source=laravel&utm_medium=github&utm_campaign=patreon-sponsors)**
-- **[Lendio](https://lendio.com)**
-
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### Пример запроса:
+```
+Headers:
+    Authorization: d84eb9036bfc2fa7f46727f101c73c73
+Body:
+{
+    "project": 816,
+    "invoice": 73,
+    "status": "paid",
+    "amount": 700,
+    "amount_paid": 700,
+    "rand": "SNuHufEJ",
+}
+```
